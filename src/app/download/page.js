@@ -33,6 +33,7 @@ const S = {
   notifications: "/screens/shot2.jpg",
   safety: "/screens/shot6.jpg",
   welcome: "/screens/shot11.jpg",
+  install: "/screens/install-warning.jpg",
 };
 const GALLERY = [S.discover, S.messages, S.chat, S.profile, S.videoCall, S.notifications, S.welcome];
 
@@ -49,6 +50,7 @@ export default function DownloadPage() {
       <Showcase />
       <ScanSection />
       <Gallery />
+      <InstallGuide />
       <HowItWorks />
       <Faq />
       <CtaBand />
@@ -170,6 +172,7 @@ function Nav() {
             <a href="#features" className="hover:text-brand-600 transition">Features</a>
             <a href="#showcase" className="hover:text-brand-600 transition">Screens</a>
             <a href="#scan" className="hover:text-brand-600 transition">Scan</a>
+            <a href="#install" className="hover:text-brand-600 transition">Install</a>
             <a href="#faq" className="hover:text-brand-600 transition">FAQ</a>
           </nav>
           <DownloadButton size="sm" label="Get the app" href="#get" />
@@ -423,6 +426,72 @@ function Gallery() {
   );
 }
 
+/* ---------------- Install guide ---------------- */
+function InstallGuide() {
+  const steps = [
+    { icon: Download, title: "Download the APK", desc: "Tap “All devices” or “Latest devices”. Your browser saves the .apk file." },
+    { icon: Smartphone, title: "Open the downloaded file", desc: "Tap it from your notifications or Downloads folder to begin installing." },
+    { icon: ShieldCheck, title: "Pass the Play Protect check", desc: "If Android shows “App blocked to protect your device”, that’s expected for apps outside the Play Store. Tap “Install anyway”, then “Got it”." },
+    { icon: CheckCircle2, title: `Open ${BRAND} & sign up`, desc: "Launch the app, create your profile, and start discovering matches." },
+  ];
+  return (
+    <section id="install" className="relative py-24 bg-gradient-to-b from-white to-brand-50/60">
+      <div className="mx-auto max-w-6xl px-5">
+        <SectionHead
+          kicker="Installing"
+          title="Installing on Android takes 20 seconds"
+          subtitle={`${BRAND} installs as a direct APK, so Android asks you to confirm once. Here's exactly what to expect.`}
+        />
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center mt-14">
+          {/* Steps */}
+          <ol className="space-y-5">
+            {steps.map((s, i) => (
+              <li key={i} className="flex gap-4 animate-fade-up" style={{ animationDelay: `${i * 80}ms` }}>
+                <span className="h-11 w-11 shrink-0 rounded-2xl grad-heart text-white font-extrabold flex items-center justify-center">
+                  {i + 1}
+                </span>
+                <div className="pt-0.5">
+                  <div className="flex items-center gap-2 font-extrabold text-plum">
+                    <s.icon size={16} className="text-brand-500" /> {s.title}
+                  </div>
+                  <p className="mt-1 text-sm text-plum-soft leading-relaxed">{s.desc}</p>
+                </div>
+              </li>
+            ))}
+            <li className="flex items-start gap-3 rounded-2xl bg-brand-50 border border-brand-100 p-4">
+              <ShieldCheck size={20} className="text-brand-500 mt-0.5 shrink-0" />
+              <p className="text-xs text-brand-700 leading-relaxed">
+                <span className="font-bold">Why the warning?</span> Because {BRAND} is downloaded
+                directly (not via the Play Store), Google Play Protect flags it as a new developer.
+                It's our official signed build — completely safe to install.
+              </p>
+            </li>
+          </ol>
+
+          {/* Screenshot with annotation */}
+          <div className="flex justify-center animate-fade-up" style={{ animationDelay: "120ms" }}>
+            <div className="relative">
+              <div className="absolute inset-0 grad-heart blur-3xl opacity-20 rounded-full" />
+              <PhoneFrame src={S.install} className="relative w-[248px]" alt="Google Play Protect install prompt" />
+              <div className="absolute -left-4 sm:-left-12 bottom-28 animate-float">
+                <FloatCard>
+                  <span className="h-9 w-9 rounded-full grad-heart flex items-center justify-center text-white">
+                    <CheckCircle2 size={16} />
+                  </span>
+                  <div>
+                    <div className="text-xs font-extrabold text-plum">Tap “Install anyway”</div>
+                    <div className="text-[10px] text-muted">then “Got it” — you're in</div>
+                  </div>
+                </FloatCard>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ---------------- How it works ---------------- */
 function HowItWorks() {
   const steps = [
@@ -458,6 +527,7 @@ function Faq() {
     { q: "Is the app free to download?", a: `Yes — ${BRAND} is 100% free to download and set up, with no payment required.` },
     { q: "How do I install the APK?", a: "Tap Download APK (or scan a QR code), open the downloaded file, and allow installs from your browser if prompted scrolling and you will see more info or install anyway click on install anyway option. Then follow the on-screen steps." },
     { q: "Is it safe to install?", a: "Absolutely. It's the official signed build, and every member profile is reviewed and verified to keep the community safe." },
+    { q: "I see “App blocked” / Play Protect — is that a problem?", a: `No — that's normal for any app installed outside the Play Store. Google Play Protect just doesn't recognise a brand-new developer yet. Tap “Install anyway”, then “Got it”, and ${BRAND} installs safely. See the Install section above for the exact steps.` },
     { q: "Which Android version do I need?", a: `${BRAND} supports ${APK.minAndroid} and above.` },
     { q: "Is my data private?", a: "Yes. You control who sees your photos with private galleries, and you can block or report anyone at any time." },
   ];

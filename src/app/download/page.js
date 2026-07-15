@@ -59,11 +59,12 @@ export default function DownloadPage() {
 
 /* ---------------- Building blocks ---------------- */
 function DownloadButton({ className, size = "lg", label = "Download APK", sublabel, href = APK.url }) {
+  const external = /^https?:/.test(href);
   return (
     <a
       href={href}
-      target="_blank"
-      rel="noreferrer noopener"
+      target={external ? "_blank" : undefined}
+      rel={external ? "noreferrer noopener" : undefined}
       className={cn(
         "group inline-flex items-center justify-center gap-2.5 grad-heart text-white font-extrabold rounded-2xl shadow-lg shadow-brand-500/30 hover:shadow-brand-500/50 hover:-translate-y-0.5 transition-all duration-200",
         size === "lg" ? "h-14 px-8 text-[15px]" : "h-11 px-5 text-sm",
@@ -76,6 +77,50 @@ function DownloadButton({ className, size = "lg", label = "Download APK", sublab
         {sublabel && <span className="text-[10px] font-semibold text-white/80 mt-0.5">{sublabel}</span>}
       </span>
     </a>
+  );
+}
+
+/** Two clearly-labelled download choices — universal (all devices) + latest. */
+function DualDownload({ center, onDark }) {
+  return (
+    <div className={cn("flex flex-wrap gap-3", center && "justify-center")}>
+      {/* Primary: all devices (universal) */}
+      <a
+        href={APK.universal}
+        target="_blank"
+        rel="noreferrer noopener"
+        className={cn(
+          "group inline-flex items-center gap-2.5 rounded-2xl h-14 px-7 font-extrabold shadow-lg hover:-translate-y-0.5 transition-all duration-200",
+          onDark ? "bg-white text-brand-600" : "grad-heart text-white shadow-brand-500/30"
+        )}
+      >
+        <Download size={20} className="group-hover:translate-y-0.5 transition-transform" />
+        <span className="flex flex-col items-start leading-none">
+          All devices
+          <span className={cn("text-[10px] font-semibold mt-0.5", onDark ? "text-brand-400" : "text-white/80")}>
+            Universal · works everywhere
+          </span>
+        </span>
+      </a>
+      {/* Secondary: latest / modern devices */}
+      <a
+        href={APK.modern}
+        target="_blank"
+        rel="noreferrer noopener"
+        className={cn(
+          "group inline-flex items-center gap-2.5 rounded-2xl h-14 px-7 font-extrabold border-2 hover:-translate-y-0.5 transition-all duration-200",
+          onDark ? "border-white/40 text-white hover:bg-white/10" : "border-brand-200 text-brand-600 bg-white hover:bg-brand-50"
+        )}
+      >
+        <Download size={20} className="group-hover:translate-y-0.5 transition-transform" />
+        <span className="flex flex-col items-start leading-none">
+          Latest devices
+          <span className={cn("text-[10px] font-semibold mt-0.5", onDark ? "text-white/70" : "text-muted")}>
+            Optimised for newer phones
+          </span>
+        </span>
+      </a>
+    </div>
   );
 }
 
@@ -127,7 +172,7 @@ function Nav() {
             <a href="#scan" className="hover:text-brand-600 transition">Scan</a>
             <a href="#faq" className="hover:text-brand-600 transition">FAQ</a>
           </nav>
-          <DownloadButton size="sm" label="Get the app" />
+          <DownloadButton size="sm" label="Get the app" href="#get" />
         </div>
       </div>
     </header>
@@ -154,10 +199,10 @@ function Hero() {
             profiles, connect with meaningful matches, and start real conversations.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center gap-4">
-            <DownloadButton label="Download APK" sublabel={`v${APK.version} · ${APK.size}`} />
-            <a href="#scan" className="inline-flex items-center gap-2 font-bold text-plum hover:text-brand-600 transition h-14 px-2">
-              <ScanLine size={18} /> Scan to install
+          <div id="get" className="mt-8 space-y-3">
+            <DualDownload />
+            <a href="#scan" className="inline-flex items-center gap-2 font-bold text-sm text-plum-soft hover:text-brand-600 transition">
+              <ScanLine size={16} /> or scan a QR to install on your phone
             </a>
           </div>
 
@@ -309,7 +354,7 @@ function Showcase() {
 function ScanSection() {
   const qrs = [
     { src: "/downloads/qr-universal.png", href: APK.universal, label: "All devices", hint: "Works on every Android phone" },
-    { src: "/downloads/qr-modern.png", href: APK.modern, label: "Modern devices", hint: "Optimised for newer phones" },
+    { src: "/downloads/qr-modern.png", href: APK.modern, label: "Latest devices", hint: "Optimised for newer phones" },
   ];
   return (
     <section id="scan" className="mx-auto max-w-6xl px-5 py-24">
@@ -327,9 +372,8 @@ function ScanSection() {
               Completely free — no payment required, ever.
             </p>
             <div className="mt-7">
-              <a href={APK.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-2.5 bg-white text-brand-600 font-extrabold rounded-2xl h-14 px-8 shadow-lg hover:-translate-y-0.5 transition-all">
-                <Download size={20} /> Or download APK directly
-              </a>
+              <p className="text-xs font-bold uppercase tracking-widest text-white/70 mb-2.5">Or download directly</p>
+              <DualDownload onDark />
               <div className="mt-3 flex items-center gap-2 text-sm text-white/80 font-semibold">
                 <CheckCircle2 size={16} /> {APK.size} · {APK.minAndroid} · v{APK.version}
               </div>
@@ -456,10 +500,10 @@ function CtaBand() {
           <p className="mt-3 text-white/80 max-w-xl mx-auto">
             Join thousands finding meaningful connections on {BRAND}. Download now and create your profile in minutes.
           </p>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <DownloadButton label="Download APK" sublabel={`v${APK.version} · ${APK.size}`} />
-            <a href="#scan" className="inline-flex items-center gap-2 font-bold text-white/90 hover:text-white transition h-14 px-4">
-              <QrCode size={18} /> Scan a QR instead
+          <div className="mt-8 flex flex-col items-center gap-4">
+            <DualDownload center onDark />
+            <a href="#scan" className="inline-flex items-center gap-2 font-bold text-sm text-white/90 hover:text-white transition">
+              <QrCode size={16} /> or scan a QR instead
             </a>
           </div>
         </div>
@@ -481,7 +525,8 @@ function Footer() {
         <div className="flex items-center gap-5 text-sm font-semibold text-plum-soft">
           <a href="#features" className="hover:text-brand-600 transition">Features</a>
           <a href="#faq" className="hover:text-brand-600 transition">FAQ</a>
-          <a href={APK.url} target="_blank" rel="noreferrer noopener" className="hover:text-brand-600 transition">Download</a>
+          <a href={APK.universal} target="_blank" rel="noreferrer noopener" className="hover:text-brand-600 transition">All devices</a>
+          <a href={APK.modern} target="_blank" rel="noreferrer noopener" className="hover:text-brand-600 transition">Latest devices</a>
         </div>
       </div>
     </footer>

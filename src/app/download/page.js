@@ -456,7 +456,7 @@ function HowItWorks() {
 function Faq() {
   const faqs = [
     { q: "Is the app free to download?", a: `Yes — ${BRAND} is 100% free to download and set up, with no payment required.` },
-    { q: "How do I install the APK?", a: "Tap Download APK (or scan a QR code), open the downloaded file, and allow installs from your browser if prompted. Then follow the on-screen steps." },
+    { q: "How do I install the APK?", a: "Tap Download APK (or scan a QR code), open the downloaded file, and allow installs from your browser if prompted scrolling and you will see more info or install anyway click on install anyway option. Then follow the on-screen steps." },
     { q: "Is it safe to install?", a: "Absolutely. It's the official signed build, and every member profile is reviewed and verified to keep the community safe." },
     { q: "Which Android version do I need?", a: `${BRAND} supports ${APK.minAndroid} and above.` },
     { q: "Is my data private?", a: "Yes. You control who sees your photos with private galleries, and you can block or report anyone at any time." },

@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Duo — Admin Dashboard
 
-## Getting Started
+A professional web admin console for the **Duo** matchmaking app (Firebase
+project `leveldo-43cdc`). Built with Next.js (App Router), Tailwind CSS v4, Redux
+Toolkit, Recharts, and the Firebase Web SDK. It reads and writes the **same
+Firestore collections** the mobile app uses, so everything you manage here is
+reflected live in the app.
 
-First, run the development server:
+## What you can do
+
+| Section | Capabilities |
+|---|---|
+| **Overview** | Live KPIs (members, online, matches, premium), signup trend chart, gender split, top cities, recent members & open reports |
+| **Members** | Search / filter (status, gender), view full profiles, edit, verify, grant/remove premium, suspend/reinstate, delete, bulk delete, add member, send notification |
+| **Member detail** | Complete profile (personal, education, family, lifestyle, preferences, photo gallery) + inline edit + all moderation actions |
+| **Approvals** | Review newly completed profiles and approve (verify) or reject (hide) |
+| **Reports** | Moderate user reports — dismiss or suspend the reported member |
+| **Matches** | Track match & photo-unlock requests; accept / reject / reset status |
+| **Conversations** | Read-only oversight of matched members' chat threads |
+| **Notifications** | Broadcast to all members, per-member notifications, full delivery history |
+| **Settings** | Global push-notification switch, data management (clear collections), connection info |
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 and sign in.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### Sign in
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Admins sign in with their own **Firebase email + password** (typed at login and
+sent straight to Firebase Auth — no shared password is stored in the code or the
+deployed site). Access to data is then enforced by your Firestore security rules,
+so only real admin accounts can read/write.
 
-## Learn More
+> The `/download` page is public and safe to share. Every other route (the admin
+> dashboard) requires sign-in and is redirected to `/login` otherwise.
 
-To learn more about Next.js, take a look at the following resources:
+In live mode this signs the dashboard into your Firebase project so it can read
+and write Firestore under your security rules.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Configuration — `.env.local`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The Firebase Web config is pre-filled from your app's `google-services.json`:
 
-## Deploy on Vercel
+```
+NEXT_PUBLIC_FIREBASE_API_KEY=…
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=leveldo-43cdc.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=leveldo-43cdc
+…
+NEXT_PUBLIC_DATA_SOURCE=firebase   # or "mock" to preview with built-in demo data
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Two data modes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **`firebase`** (default) — live Firestore data from `leveldo-43cdc`.
+- **`mock`** — the dashboard runs on the app's built-in demo profiles with no
+  backend. Great for a design preview or offline demo.
+
+### If live data is empty or sign-in fails
+
+The bundled API key comes from the **Android** app entry. If it is app-restricted
+in Google Cloud, browser requests can be blocked. To fix, in the Firebase console:
+
+1. **Project settings → Your apps → Add app → Web** — copy the generated
+   `appId` into `NEXT_PUBLIC_FIREBASE_APP_ID` (and confirm the other values).
+2. Ensure **Authentication → Email/Password** is enabled and the admin account
+   (`NEXT_PUBLIC_ADMIN_FB_EMAIL`) exists.
+3. Confirm Firestore security rules allow that admin account to read the
+   collections.
+
+Until then you can always set `NEXT_PUBLIC_DATA_SOURCE=mock` to explore the UI.
+
+## Architecture
+
+```
+src/
+  app/                    # routes (overview, users, approvals, reports, matches,
+                          #         messages, notifications, settings, login)
+  components/
+    layout/               # AppShell (auth guard), Sidebar, Topbar
+    ui/                   # design system: Button, Avatar, Badge, Modal, Toggle,
+                          #   StatCard, RowMenu, Feedback (toast + confirm), …
+    NotifyModal.js        # shared notification composer
+  hooks/useCollection.js  # React hooks over the data service (realtime)
+  lib/
+    firebase/client.js    # Firebase Web SDK bootstrap (guarded)
+    data/service.js       # unified data layer — Firestore live OR in-memory mock
+    data/mockData.js      # built-in demo data (ported from the mobile app)
+    auth.js               # admin sign-in
+    selectors.js          # derived views (matches, charts, lookups)
+    constants.js          # brand name, collection names, admin creds
+```
+
+The data service exposes one API (`subscribeUsers`, `adminUpdateUser`,
+`clearCollection`, …) and transparently targets Firestore or the mock store, so
+every page is backend-agnostic.

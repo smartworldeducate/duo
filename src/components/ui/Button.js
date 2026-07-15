@@ -1,52 +1,45 @@
 "use client";
-import { Flex, Text, Button, Tabs, Box, Card, Avatar } from "@radix-ui/themes";
+import { cn } from "@/lib/utils";
 
-export default function MyApp() {
-	return (
-    <>
-    <Box maxWidth="240px">
-	<Card>
-		<Flex gap="3" align="center">
-			<Avatar
-				size="3"
-				src="https://images.unsplash.com/photo-1607346256330-dee7af15f7c5?&w=64&h=64&dpr=2&q=70&crop=focalpoint&fp-x=0.67&fp-y=0.5&fp-z=1.4&fit=crop"
-				radius="full"
-				fallback="T"
-			/>
-			<Box>
-				<Text as="div" size="2" weight="bold">
-					Teodros Girmay
-				</Text>
-				<Text as="div" size="2" color="gray">
-					Engineering
-				</Text>
-			</Box>
-		</Flex>
-	</Card>
-</Box>
-<Tabs.Root defaultValue="account">
-	<Tabs.List>
-		<Tabs.Trigger value="account">Account</Tabs.Trigger>
-		<Tabs.Trigger value="documents">Documents</Tabs.Trigger>
-		<Tabs.Trigger value="settings">Settings</Tabs.Trigger>
-	</Tabs.List>
+const variants = {
+  primary:
+    "text-white grad-heart shadow-sm hover:opacity-95 active:opacity-90 border-transparent",
+  secondary:
+    "bg-white text-brand-600 border border-brand-200 hover:bg-brand-50",
+  ghost: "bg-transparent text-plum-soft hover:bg-black/5 border-transparent",
+  danger: "bg-red-50 text-red-600 border border-red-100 hover:bg-red-100",
+  dark: "bg-plum text-white hover:opacity-90 border-transparent",
+  outline: "bg-white text-plum border border-[var(--border)] hover:bg-brand-50/50",
+};
 
-	<Box pt="3">
-		<Tabs.Content value="account">
-			<Text size="2">Make changes to your account.</Text>
-		</Tabs.Content>
+const sizes = {
+  sm: "h-8 px-3 text-xs gap-1.5 rounded-lg",
+  md: "h-10 px-4 text-sm gap-2 rounded-xl",
+  lg: "h-12 px-6 text-sm gap-2 rounded-xl",
+  icon: "h-9 w-9 rounded-lg",
+};
 
-		<Tabs.Content value="documents">
-			<Text size="2">Access and update your documents.</Text>
-		</Tabs.Content>
-
-		<Tabs.Content value="settings">
-			<Text size="2">Edit your profile or update contact information.</Text>
-		</Tabs.Content>
-	</Box>
-  
-</Tabs.Root>
-
-</>
-	);
+export default function Button({
+  as: Comp = "button",
+  variant = "primary",
+  size = "md",
+  className,
+  children,
+  disabled,
+  ...props
+}) {
+  return (
+    <Comp
+      disabled={disabled}
+      className={cn(
+        "inline-flex items-center justify-center font-semibold whitespace-nowrap transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none cursor-pointer select-none",
+        variants[variant],
+        sizes[size],
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </Comp>
+  );
 }

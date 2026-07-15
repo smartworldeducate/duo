@@ -1,154 +1,129 @@
 "use client";
-
 import Link from "next/link";
-import { useState } from "react";
-import { useDispatch } from "react-redux";
-import { addTab } from "../../redux/slices/tabsSlice";
-import Image from "next/image";
-import logo from "../../../public/logo.png";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { BRAND, BRAND_TAGLINE } from "@/lib/constants";
 import {
-  Home,
-  FileText,
-  ClipboardList,
-  CalendarCheck,
-  BarChart2,
-  GraduationCap,
-  MessageSquare,
-  Shield,
+  LayoutDashboard,
+  Users,
+  Workflow,
+  ShieldCheck,
+  Flag,
+  Heart,
+  MessagesSquare,
+  Bell,
   Settings,
-  Users2,
-  Minus,
-  Plus,
+  Sparkles,
+  X,
 } from "lucide-react";
 
-const icons = {
-  Home,
-  FileText,
-  ClipboardList,
-  CalendarCheck,
-  BarChart2,
-  GraduationCap,
-  MessageSquare,
-  Shield,
-  Settings,
-  Users2,
-};
+export const NAV = [
+  { name: "Overview", path: "/", icon: LayoutDashboard },
+  { name: "Members", path: "/users", icon: Users },
+  { name: "Staging", path: "/staging", icon: Workflow },
+  { name: "Approvals", path: "/approvals", icon: ShieldCheck },
+  { name: "Reports", path: "/reports", icon: Flag },
+  { name: "Matches", path: "/matches", icon: Heart },
+  { name: "Messages", path: "/messages", icon: MessagesSquare },
+  { name: "Notifications", path: "/notifications", icon: Bell },
+  { name: "Settings", path: "/settings", icon: Settings },
+];
 
-export default function Sidebar({ collapsed }) {
-  const dispatch = useDispatch();
-  const [openMenu, setOpenMenu] = useState("CRM");
+export default function Sidebar({ collapsed, mobileOpen, onCloseMobile }) {
+  const pathname = usePathname();
+  const isActive = (path) =>
+    path === "/" ? pathname === "/" : pathname.startsWith(path);
 
-  // Sidebar modules (CRM has children)
-  const modules = [
-    { name: "Dashboard", path: "/", icon: "Home" },
-    {
-      name: "CRM",
-      icon: "Users2",
-      children: [
-        { name: "Leads", path: "/crm/leads" },
-        { name: "Registrations", path: "/crm/registrations" },
-        { name: "Admissions", path: "/crm/campaign" },
-        { name: "Campaign", path: "/crm/campaign" },
-      ],
-    },
-    { name: "Billing", path: "/employee", icon: "FileText" },
-    { name: "Process", path: "/students", icon: "ClipboardList" },
-    { name: "Attendance", path: "/payments", icon: "CalendarCheck" },
-    { name: "Analytics", path: "/engagement", icon: "BarChart2" },
-    { name: "Academics", path: "/school", icon: "GraduationCap" },
-    { name: "Communications", path: "/engagement", icon: "MessageSquare" },
-    { name: "Security", path: "/payments", icon: "Shield" },
-    { name: "Setup", path: "/engagement", icon: "Settings" },
-  ];
-
-  const handleModuleClick = (mod) => {
-    if (mod.children) {
-      setOpenMenu(openMenu === mod.name ? "" : mod.name);
-    } else {
-      dispatch(addTab({ name: mod.name, path: mod.path, icon: mod.icon }));
-    }
-  };
-
-  return (
+  const content = (
     <aside
-      className={`h-full border-r border-gray-200 transition-all duration-300 bg-white ${
-        collapsed ? "w-16" : "w-64"
-      }`}
+      className={cn(
+        "h-full bg-white border-r border-[var(--border)] flex flex-col transition-all duration-300 z-40",
+        collapsed ? "w-[76px]" : "w-64"
+      )}
     >
-      {/* Logo */}
-      {/* <div className="flex p-3 items-center justify-center py-4">
-        {!collapsed ? (
-          <Image src={logo} alt="logo" className="h-8 w-auto" />
-        ) : (
-          <span className="font-bold text-lg">CRM</span>
+      {/* Brand */}
+      <div className="h-16 flex items-center gap-3 px-4 border-b border-[var(--border)]">
+        <div className="h-10 w-10 rounded-xl grad-heart flex items-center justify-center text-white shadow-sm shrink-0">
+          <Heart size={20} fill="white" />
+        </div>
+        {!collapsed && (
+          <div className="min-w-0">
+            <div className="font-extrabold text-plum leading-tight truncate">{BRAND}</div>
+            <div className="text-[11px] font-semibold text-muted tracking-wide uppercase truncate">
+              {BRAND_TAGLINE}
+            </div>
+          </div>
         )}
-      </div> */}
-      <div className="flex p-3 py-4">
-        {!collapsed ? (
-          // <Image src={logo} alt="logo" className="h-8 w-auto" />
-              <span className="font-bold !text-gray-500 text-lg">CRM</span>
-        ) : (
-          <span className="font-bold !text-gray-500 text-lg">CRM</span>
-        )}
+        <button
+          onClick={onCloseMobile}
+          className="ml-auto lg:hidden text-muted hover:text-plum cursor-pointer"
+        >
+          <X size={20} />
+        </button>
       </div>
 
-      {/* Menu */}
-      <nav className="flex flex-col gap-1 mt-2">
-        {modules.map((mod) => {
-          const Icon = icons[mod.icon];
-          const isOpen = openMenu === mod.name;
-
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-1">
+        {NAV.map((item) => {
+          const Icon = item.icon;
+          const active = isActive(item.path);
           return (
-            <div key={mod.name}>
-              {/* Main Menu Item */}
-              <Link
-                href={mod.path || "#"}
-                onClick={(e) => {
-                  if (mod.children) {
-                    e.preventDefault();
-                    handleModuleClick(mod);
-                  } else {
-                    handleModuleClick(mod);
-                  }
-                }}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-md !text-gray-500 hover:!text-gray-700 !no-underline hover:!no-underline hover:bg-gray-200"
-              >
-                <div className="flex items-center gap-3">
-                  {Icon && <Icon className="h-5 w-5 text-gray-500" />}
-                  {!collapsed && <span>{mod.name}</span>}
-                </div>
-                {!collapsed && mod.children && (
-                  <span>{isOpen ? <Minus size={16} /> : <Plus size={16} />}</span>
-                )}
-              </Link>
-
-              {/* Submenu (for CRM) */}
-              {!collapsed && isOpen && mod.children && (
-                <div className="ml-9 mt-1 flex flex-col border-l border-gray-200">
-                  {mod.children.map((child) => (
-                    <Link
-                      key={child.name}
-                      href={child.path}
-                      onClick={() =>
-                        dispatch(
-                          addTab({
-                            name: child.name,
-                            path: child.path,
-                            parent: mod.name,
-                          })
-                        )
-                      }
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-md !text-gray-500 hover:!text-gray-700 !no-underline hover:!no-underline hover:bg-gray-200"
-                    >
-                      {child.name}
-                    </Link>
-                  ))}
-                </div>
+            <Link
+              key={item.name}
+              href={item.path}
+              title={collapsed ? item.name : undefined}
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-3 h-11 text-sm font-semibold transition-all group relative",
+                active
+                  ? "grad-heart text-white shadow-[0_6px_16px_-6px_rgba(255,77,141,0.7)]"
+                  : "text-plum-soft hover:bg-brand-50 hover:text-brand-600",
+                collapsed && "justify-center px-0"
               )}
-            </div>
+            >
+              <Icon size={19} strokeWidth={active ? 2.4 : 2} className="shrink-0" />
+              {!collapsed && <span className="truncate">{item.name}</span>}
+            </Link>
           );
         })}
       </nav>
+
+      {/* Footer card */}
+      {!collapsed && (
+        <div className="p-3">
+          <div className="rounded-xl grad-hero p-4 text-white relative overflow-hidden">
+            <Sparkles size={18} className="mb-2" />
+            <p className="text-sm font-bold leading-snug">Everything in one place</p>
+            <p className="text-[11px] text-white/85 mt-1 leading-relaxed">
+              Manage members, matches & moderation from a single console.
+            </p>
+          </div>
+        </div>
+      )}
     </aside>
+  );
+
+  return (
+    <>
+      {/* Desktop */}
+      <div className="hidden lg:block h-full">{content}</div>
+
+      {/* Mobile drawer */}
+      <div
+        className={cn(
+          "lg:hidden fixed inset-0 z-50 transition-opacity",
+          mobileOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+      >
+        <div className="absolute inset-0 bg-plum/40 backdrop-blur-sm" onClick={onCloseMobile} />
+        <div
+          className={cn(
+            "absolute left-0 top-0 h-full transition-transform duration-300",
+            mobileOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+        >
+          {content}
+        </div>
+      </div>
+    </>
   );
 }

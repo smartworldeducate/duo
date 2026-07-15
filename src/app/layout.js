@@ -1,41 +1,36 @@
-import AuthLayout from "@/components/layout/authlayout/AuthLayout";
+import localFont from "next/font/local";
 import "./globals.css";
-import Sidebar from "@/components/layout/Sidebar";
-import Tabs from "@/components/layout/Tabs";
 import { ReduxProvider } from "@/redux/store";
-import "bootstrap/dist/css/bootstrap.min.css";
-import Script from "next/script";
-import "@radix-ui/themes/styles.css";
-import { Theme } from "@radix-ui/themes";
-import TabRenderer from "@/components/TabRenderer";
+import { FeedbackProvider } from "@/components/ui/Feedback";
+import AppShell from "@/components/layout/AppShell";
+import { BRAND } from "@/lib/constants";
+
+const poppins = localFont({
+  src: [
+    { path: "./fonts/Poppins-Regular.ttf", weight: "400", style: "normal" },
+    { path: "./fonts/Poppins-Medium.ttf", weight: "500", style: "normal" },
+    { path: "./fonts/Poppins-SemiBold.ttf", weight: "600", style: "normal" },
+    { path: "./fonts/Poppins-Bold.ttf", weight: "700", style: "normal" },
+    { path: "./fonts/Poppins-ExtraBold.ttf", weight: "800", style: "normal" },
+  ],
+  variable: "--font-poppins",
+  display: "swap",
+});
+
 export const metadata = {
-  title: "CRM Enterprise App",
-  description: "Next.js + Tailwind CRM",
+  title: `${BRAND} · Admin Dashboard`,
+  description: `${BRAND} matchmaking — admin control panel`,
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <head>
-        <link rel="stylesheet" href="/assets/css/styles.css" />
-      </head>
-
-      <body className="flex h-screen w-screen overflow-hidden">
-        	<Theme>
+    <html lang="en" className={poppins.variable}>
+      <body>
         <ReduxProvider>
-          {/* <Sidebar />
-          <div className="flex-1 flex flex-col h-full">
-            <Tabs />
-            <main className="flex-1 overflow-y-auto p-6 bg-white">
-              {children}
-            </main>
-          </div> */}
-          <AuthLayout><TabRenderer>{children}</TabRenderer></AuthLayout>
-       
-
+          <FeedbackProvider>
+            <AppShell>{children}</AppShell>
+          </FeedbackProvider>
         </ReduxProvider>
-        <Script src="/assets/js/core.bundle.js" strategy="beforeInteractive" />
-        </Theme>
       </body>
     </html>
   );

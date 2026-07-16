@@ -339,6 +339,16 @@ export async function setAppDownloadConfig(patch) {
   store.config.apk = apk;
 }
 
+/** All user ids (doc ids = userId). One-shot read; used to broadcast to everyone. */
+export async function getAllUserIds() {
+  if (isFirebaseEnabled) {
+    const { collection, getDocs } = await loadFb();
+    const snap = await getDocs(collection(db, Collections.users));
+    return snap.docs.map((d) => d.id);
+  }
+  return store.users.map((u) => u.userId);
+}
+
 export async function adminSendNotification(userIds, title, body) {
   const ids = userIds.filter(Boolean);
   if (!ids.length) return;

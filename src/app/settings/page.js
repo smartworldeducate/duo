@@ -49,6 +49,7 @@ export default function SettingsPage() {
   const [clearing, setClearing] = useState(null);
   const [apk, setApk] = useState({ universal: "", modern: "", version: "", size: "" });
   const [savingApk, setSavingApk] = useState(false);
+  const [notifyOnSave, setNotifyOnSave] = useState(true);
 
   useEffect(() => {
     const unsub = data.subscribeAppConfig((cfg) => {
@@ -62,7 +63,21 @@ export default function SettingsPage() {
     setSavingApk(true);
     try {
       await data.setAppDownloadConfig(apk);
-      toast("Download links updated. The public download page now uses these.");
+      if (notifyOnSave) {
+        // Broadcast an "update available" notice to every member's in-app inbox.
+        // The mobile app has no push server — it surfaces these Firestore docs.
+        const ids = await data.getAllUserIds();
+        const v = (apk.version || "").trim();
+        await data.adminSendNotification(
+          ids,
+          "Update available 🚀",
+          `A new version of ${BRAND}${v ? ` (v${v})` : ""} is available. Please update to the latest version for the best experience.`
+        );
+        const n = ids.length;
+        toast(`Download links saved · update notice sent to ${n} member${n === 1 ? "" : "s"}.`);
+      } else {
+        toast("Download links updated. The public download page now uses these.");
+      }
     } catch (e) {
       toast(e?.message || "Could not save download links.", "error");
     } finally {
@@ -161,10 +176,24 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        <label className="mt-4 flex items-start gap-2.5 rounded-xl bg-brand-50 border border-brand-100 p-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={notifyOnSave}
+            onChange={(e) => setNotifyOnSave(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-brand-500 shrink-0"
+          />
+          <span className="text-xs text-brand-700 leading-relaxed">
+            <span className="font-bold">Notify all members to update.</span> On save, every member
+            receives an “Update available” notification in their in-app inbox
+            {apk.version ? ` (v${apk.version})` : ""}. Uncheck to save silently (e.g. a small fix).
+          </span>
+        </label>
+
         <div className="mt-4 flex justify-end">
           <Button onClick={saveApk} disabled={savingApk}>
             {savingApk ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            Save links
+            {notifyOnSave ? "Save & notify members" : "Save links"}
           </Button>
         </div>
       </div>

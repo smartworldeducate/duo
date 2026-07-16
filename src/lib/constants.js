@@ -14,8 +14,8 @@ export const BRAND_TAGLINE = "Matchmaking Admin";
  * Override with NEXT_PUBLIC_APK_URL / NEXT_PUBLIC_APK_URL_MODERN if needed.
  */
 const drive = (id) => `https://drive.google.com/uc?export=download&id=${id}`;
-const UNIVERSAL = process.env.NEXT_PUBLIC_APK_URL || drive("1QHi6-SAhqeZRsGvZnpzy3yvbicxhOxqE");
-const MODERN = process.env.NEXT_PUBLIC_APK_URL_MODERN || drive("1l4TlPTyYg763GHnxn71UCP2Jq04HVn3t");
+const UNIVERSAL = process.env.NEXT_PUBLIC_APK_URL || drive("1ggecXk69dAAu2XIu3OaZprnLCJDqhAwQ");
+const MODERN = process.env.NEXT_PUBLIC_APK_URL_MODERN || drive("1q7m7ftcaV7G3lS6a_A5JzFCsJjPty8XW");
 
 export const APK = {
   url: UNIVERSAL, // primary download = all devices

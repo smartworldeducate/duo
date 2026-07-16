@@ -59,7 +59,7 @@ const store = {
   notifications: [...mockNotifications],
   reports: [...mockReports],
   calls: [...mockCalls],
-  config: { notificationsEnabled: true },
+  config: { notificationsEnabled: true, apk: {} },
 };
 
 const listeners = {}; // name -> Set<cb>
@@ -187,9 +187,24 @@ export const subscribeCalls = (cb) =>
     ? fbSubscribeCollection(Collections.calls, shapeCall, cb)
     : mockSubscribe("calls", cb);
 
+/**
+ * App download overrides admins can edit from Settings. Any field left blank
+ * falls back to the compiled-in values in constants.js (the `APK` object), so
+ * an empty/absent config never breaks the /download page.
+ */
+function readApkConfig(data = {}) {
+  const apk = data.apk || {};
+  return {
+    universal: apk.universal || "",
+    modern: apk.modern || "",
+    version: apk.version || "",
+    size: apk.size || "",
+  };
+}
+
 export function subscribeAppConfig(cb) {
   if (!isFirebaseEnabled) {
-    cb({ ...store.config });
+    cb({ ...store.config, apk: readApkConfig(store.config) });
     return () => {};
   }
   let unsub = () => {};
@@ -198,9 +213,9 @@ export function subscribeAppConfig(cb) {
       doc(db, "_meta", "config"),
       (d) => {
         const data = d.data() || {};
-        cb({ notificationsEnabled: data.notificationsEnabled !== false });
+        cb({ notificationsEnabled: data.notificationsEnabled !== false, apk: readApkConfig(data) });
       },
-      () => cb({ notificationsEnabled: true })
+      () => cb({ notificationsEnabled: true, apk: readApkConfig() })
     );
   });
   return () => unsub();
@@ -302,6 +317,26 @@ export async function setNotificationsEnabled(enabled) {
     return;
   }
   store.config.notificationsEnabled = enabled;
+}
+
+/**
+ * Save admin-editable APK download settings to _meta/config.apk.
+ * `patch` may contain any of: universal, modern, version, size.
+ * Blank strings are stored as "" and treated as "use the code default".
+ */
+export async function setAppDownloadConfig(patch) {
+  const apk = {
+    universal: patch.universal ?? "",
+    modern: patch.modern ?? "",
+    version: patch.version ?? "",
+    size: patch.size ?? "",
+  };
+  if (isFirebaseEnabled) {
+    const { doc, setDoc } = await loadFb();
+    await setDoc(doc(db, "_meta", "config"), { apk }, { merge: true });
+    return;
+  }
+  store.config.apk = apk;
 }
 
 export async function adminSendNotification(userIds, title, body) {

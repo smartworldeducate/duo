@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, createContext, useContext } from "react";
 import {
   Heart,
   Download,
@@ -20,6 +20,38 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BRAND, APK } from "@/lib/constants";
+import { subscribeAppConfig } from "@/lib/data/service";
+
+/*
+ * Live APK config. The download links/version/size are admin-editable from the
+ * dashboard (Settings → App Download Links), stored in Firestore _meta/config.
+ * We subscribe here and merge any admin overrides over the compiled-in `APK`
+ * defaults, so a blank/absent config always falls back to the values in
+ * constants.js. Every component reads the effective values via useApk().
+ */
+const ApkContext = createContext(APK);
+const useApk = () => useContext(ApkContext);
+
+function useLiveApk() {
+  const [apk, setApk] = useState(APK);
+  useEffect(() => {
+    const unsub = subscribeAppConfig((cfg) => {
+      const o = cfg.apk || {};
+      const universal = o.universal || APK.universal;
+      const modern = o.modern || APK.modern;
+      setApk({
+        ...APK,
+        url: universal,
+        universal,
+        modern,
+        version: o.version || APK.version,
+        size: o.size || APK.size,
+      });
+    });
+    return () => unsub && unsub();
+  }, []);
+  return apk;
+}
 
 /* Real app screenshots (public/screens) */
 const S = {
@@ -38,29 +70,34 @@ const S = {
 const GALLERY = [S.discover, S.messages, S.chat, S.profile, S.videoCall, S.notifications, S.welcome];
 
 export default function DownloadPage() {
+  const apk = useLiveApk();
   useEffect(() => {
     document.title = `Download ${BRAND} — Find your person`;
   }, []);
   return (
-    <div className="bg-white text-plum overflow-x-hidden">
-      <Nav />
-      <Hero />
-      <StatsBand />
-      <FeatureGrid />
-      <Showcase />
-      <ScanSection />
-      <Gallery />
-      <InstallGuide />
-      <HowItWorks />
-      <Faq />
-      <CtaBand />
-      <Footer />
-    </div>
+    <ApkContext.Provider value={apk}>
+      <div className="bg-white text-plum overflow-x-hidden">
+        <Nav />
+        <Hero />
+        <StatsBand />
+        <FeatureGrid />
+        <Showcase />
+        <ScanSection />
+        <Gallery />
+        <InstallGuide />
+        <HowItWorks />
+        <Faq />
+        <CtaBand />
+        <Footer />
+      </div>
+    </ApkContext.Provider>
   );
 }
 
 /* ---------------- Building blocks ---------------- */
-function DownloadButton({ className, size = "lg", label = "Download APK", sublabel, href = APK.url }) {
+function DownloadButton({ className, size = "lg", label = "Download APK", sublabel, href }) {
+  const apk = useApk();
+  href = href ?? apk.url;
   const external = /^https?:/.test(href);
   return (
     <a
@@ -84,11 +121,12 @@ function DownloadButton({ className, size = "lg", label = "Download APK", sublab
 
 /** Two clearly-labelled download choices — universal (all devices) + latest. */
 function DualDownload({ center, onDark }) {
+  const apk = useApk();
   return (
     <div className={cn("flex flex-wrap gap-3", center && "justify-center")}>
       {/* Primary: all devices (universal) */}
       <a
-        href={APK.universal}
+        href={apk.universal}
         target="_blank"
         rel="noreferrer noopener"
         className={cn(
@@ -106,7 +144,7 @@ function DualDownload({ center, onDark }) {
       </a>
       {/* Secondary: latest / modern devices */}
       <a
-        href={APK.modern}
+        href={apk.modern}
         target="_blank"
         rel="noreferrer noopener"
         className={cn(
@@ -184,6 +222,7 @@ function Nav() {
 
 /* ---------------- Hero ---------------- */
 function Hero() {
+  const apk = useApk();
   return (
     <section id="top" className="relative pt-36 pb-24 sm:pt-40">
       <div className="absolute -top-24 -left-20 h-96 w-96 grad-heart opacity-20 blur-3xl animate-blob" />
@@ -210,7 +249,7 @@ function Hero() {
           </div>
 
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
-            <Meta icon={Smartphone} text={APK.minAndroid} />
+            <Meta icon={Smartphone} text={apk.minAndroid} />
             <Meta icon={ShieldCheck} text="100% free · verified" />
             <div className="flex items-center gap-1.5">
               <div className="flex">
@@ -355,9 +394,10 @@ function Showcase() {
 
 /* ---------------- Scan to download ---------------- */
 function ScanSection() {
+  const apk = useApk();
   const qrs = [
-    { src: "/downloads/qr-universal.png", href: APK.universal, label: "All devices", hint: "Works on every Android phone" },
-    { src: "/downloads/qr-modern.png", href: APK.modern, label: "Latest devices", hint: "Optimised for newer phones" },
+    { src: "/downloads/qr-universal.png", href: apk.universal, label: "All devices", hint: "Works on every Android phone" },
+    { src: "/downloads/qr-modern.png", href: apk.modern, label: "Latest devices", hint: "Optimised for newer phones" },
   ];
   return (
     <section id="scan" className="mx-auto max-w-6xl px-5 py-24">
@@ -378,7 +418,7 @@ function ScanSection() {
               <p className="text-xs font-bold uppercase tracking-widest text-white/70 mb-2.5">Or download directly</p>
               <DualDownload onDark />
               <div className="mt-3 flex items-center gap-2 text-sm text-white/80 font-semibold">
-                <CheckCircle2 size={16} /> {APK.size} · {APK.minAndroid} · v{APK.version}
+                <CheckCircle2 size={16} /> {apk.size} · {apk.minAndroid} · v{apk.version}
               </div>
             </div>
           </div>
@@ -523,12 +563,13 @@ function HowItWorks() {
 
 /* ---------------- FAQ ---------------- */
 function Faq() {
+  const apk = useApk();
   const faqs = [
     { q: "Is the app free to download?", a: `Yes — ${BRAND} is 100% free to download and set up, with no payment required.` },
     { q: "How do I install the APK?", a: "Tap Download APK (or scan a QR code), open the downloaded file, and allow installs from your browser if prompted scrolling and you will see more info or install anyway click on install anyway option. Then follow the on-screen steps." },
     { q: "Is it safe to install?", a: "Absolutely. It's the official signed build, and every member profile is reviewed and verified to keep the community safe." },
     { q: "I see “App blocked” / Play Protect — is that a problem?", a: `No — that's normal for any app installed outside the Play Store. Google Play Protect just doesn't recognise a brand-new developer yet. Tap “Install anyway”, then “Got it”, and ${BRAND} installs safely. See the Install section above for the exact steps.` },
-    { q: "Which Android version do I need?", a: `${BRAND} supports ${APK.minAndroid} and above.` },
+    { q: "Which Android version do I need?", a: `${BRAND} supports ${apk.minAndroid} and above.` },
     { q: "Is my data private?", a: "Yes. You control who sees your photos with private galleries, and you can block or report anyone at any time." },
   ];
   const [open, setOpen] = useState(0);
@@ -584,6 +625,7 @@ function CtaBand() {
 
 /* ---------------- Footer ---------------- */
 function Footer() {
+  const apk = useApk();
   return (
     <footer className="border-t border-black/5 bg-white">
       <div className="mx-auto max-w-6xl px-5 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -595,8 +637,8 @@ function Footer() {
         <div className="flex items-center gap-5 text-sm font-semibold text-plum-soft">
           <a href="#features" className="hover:text-brand-600 transition">Features</a>
           <a href="#faq" className="hover:text-brand-600 transition">FAQ</a>
-          <a href={APK.universal} target="_blank" rel="noreferrer noopener" className="hover:text-brand-600 transition">All devices</a>
-          <a href={APK.modern} target="_blank" rel="noreferrer noopener" className="hover:text-brand-600 transition">Latest devices</a>
+          <a href={apk.universal} target="_blank" rel="noreferrer noopener" className="hover:text-brand-600 transition">All devices</a>
+          <a href={apk.modern} target="_blank" rel="noreferrer noopener" className="hover:text-brand-600 transition">Latest devices</a>
         </div>
       </div>
     </footer>

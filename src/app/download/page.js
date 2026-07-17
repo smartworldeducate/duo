@@ -19,7 +19,7 @@ import {
   ScanLine,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { BRAND, APK } from "@/lib/constants";
+import { BRAND, APK, directDownloadUrl } from "@/lib/constants";
 import { subscribeAppConfig } from "@/lib/data/service";
 
 /*
@@ -37,8 +37,10 @@ function useLiveApk() {
   useEffect(() => {
     const unsub = subscribeAppConfig((cfg) => {
       const o = cfg.apk || {};
-      const universal = o.universal || APK.universal;
-      const modern = o.modern || APK.modern;
+      // Admins paste Drive share links; normalise them so phones download the
+      // APK directly instead of bouncing into the Google Drive app.
+      const universal = directDownloadUrl(o.universal) || APK.universal;
+      const modern = directDownloadUrl(o.modern) || APK.modern;
       setApk({
         ...APK,
         url: universal,
@@ -51,6 +53,30 @@ function useLiveApk() {
     return () => unsub && unsub();
   }, []);
   return apk;
+}
+
+/*
+ * The download buttons are for phones only — everything bigger (computers,
+ * tablets) gets a "scan this on your phone" panel instead. This is a nudge, not
+ * access control: the Drive URLs are public, so a spoofed user-agent still
+ * downloads fine.
+ * Returns null until detected, so the prerendered HTML and the first client
+ * render agree (a bare `false` default would flash the notice at phone users).
+ */
+function useIsPhone() {
+  const [isPhone, setIsPhone] = useState(null);
+  useEffect(() => {
+    // Chrome's `mobile` hint is exactly the phone/not-a-phone split we want:
+    // true on phones, false on tablets and desktops. It's Chromium-only and
+    // needs a secure context, so fall back to the UA string elsewhere — there,
+    // Android phones carry a "Mobile" token that Android tablets leave out, and
+    // iPad is deliberately absent from the list.
+    const hint = navigator.userAgentData?.mobile;
+    if (typeof hint === "boolean") return setIsPhone(hint);
+    const ua = navigator.userAgent || "";
+    setIsPhone(/iPhone|iPod|Android.*Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(ua));
+  }, []);
+  return isPhone;
 }
 
 /* Real app screenshots (public/screens) */
@@ -119,9 +145,57 @@ function DownloadButton({ className, size = "lg", label = "Download APK", sublab
   );
 }
 
-/** Two clearly-labelled download choices — universal (all devices) + latest. */
-function DualDownload({ center, onDark }) {
+/**
+ * Shown on anything that isn't a phone, in place of the download buttons.
+ * `withQr` is off inside the Scan section, which already has full-size codes
+ * right next to it.
+ */
+function PhoneOnlyNotice({ center, onDark, withQr = true }) {
   const apk = useApk();
+  const codes = [
+    { src: "/downloads/qr-universal.png", label: "All devices" },
+    { src: "/downloads/qr-modern.png", label: "Latest devices" },
+  ];
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border p-5 w-full max-w-md",
+        onDark ? "border-white/25 bg-white/10" : "border-brand-100 bg-brand-50",
+        center && "mx-auto text-center"
+      )}
+    >
+      <div className={cn("flex items-center gap-2 font-extrabold", center && "justify-center", onDark ? "text-white" : "text-plum")}>
+        <Smartphone size={17} className={onDark ? "text-white/90" : "text-brand-500"} />
+        Install on your phone
+      </div>
+      <p className={cn("mt-1.5 text-sm leading-relaxed", onDark ? "text-white/80" : "text-plum-soft")}>
+        {BRAND} is an Android phone app — install it from your phone, not from this device.
+        {withQr ? " Scan a code below with your phone camera to get it." : " Scan one of the codes with your phone camera to get it."}
+      </p>
+      {withQr ? (
+        <div className={cn("mt-4 flex gap-4", center && "justify-center")}>
+          {codes.map((c) => (
+            <div key={c.label} className="text-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={c.src} alt={`${c.label} download QR`} className="w-28 h-28 rounded-xl bg-white p-1.5 shadow-sm" />
+              <div className={cn("mt-1.5 text-[11px] font-bold", onDark ? "text-white/80" : "text-plum-soft")}>{c.label}</div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className={cn("mt-3 flex items-center gap-2 text-sm font-semibold", onDark ? "text-white/80" : "text-plum-soft")}>
+          <ScanLine size={16} /> {apk.size} · {apk.minAndroid} · v{apk.version}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Two clearly-labelled download choices — universal (all devices) + latest. */
+function DualDownload({ center, onDark, withQr }) {
+  const apk = useApk();
+  const isPhone = useIsPhone();
+  if (isPhone === false) return <PhoneOnlyNotice center={center} onDark={onDark} withQr={withQr} />;
   return (
     <div className={cn("flex flex-wrap gap-3", center && "justify-center")}>
       {/* Primary: all devices (universal) */}
@@ -395,6 +469,9 @@ function Showcase() {
 /* ---------------- Scan to download ---------------- */
 function ScanSection() {
   const apk = useApk();
+  const isPhone = useIsPhone();
+  // Anything that isn't a phone: computers and tablets alike.
+  const onBigScreen = isPhone === false;
   const qrs = [
     { src: "/downloads/qr-universal.png", href: apk.universal, label: "All devices", hint: "Works on every Android phone" },
     { src: "/downloads/qr-modern.png", href: apk.modern, label: "Latest devices", hint: "Optimised for newer phones" },
@@ -415,32 +492,47 @@ function ScanSection() {
               Completely free — no payment required, ever.
             </p>
             <div className="mt-7">
-              <p className="text-xs font-bold uppercase tracking-widest text-white/70 mb-2.5">Or download directly</p>
-              <DualDownload onDark />
-              <div className="mt-3 flex items-center gap-2 text-sm text-white/80 font-semibold">
-                <CheckCircle2 size={16} /> {apk.size} · {apk.minAndroid} · v{apk.version}
-              </div>
+              {!onBigScreen && (
+                <p className="text-xs font-bold uppercase tracking-widest text-white/70 mb-2.5">Or download directly</p>
+              )}
+              <DualDownload onDark withQr={false} />
+              {!onBigScreen && (
+                <div className="mt-3 flex items-center gap-2 text-sm text-white/80 font-semibold">
+                  <CheckCircle2 size={16} /> {apk.size} · {apk.minAndroid} · v{apk.version}
+                </div>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-5">
-            {qrs.map((q) => (
-              <a
-                key={q.label}
-                href={q.href}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="group bg-white rounded-3xl p-5 text-center shadow-xl hover-lift block"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={q.src} alt={`${q.label} download QR`} className="w-full aspect-square object-contain rounded-xl" />
-                <div className="mt-3 font-extrabold text-plum text-sm">{q.label}</div>
-                <div className="text-[11px] text-muted mt-0.5">{q.hint}</div>
-                <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 opacity-0 group-hover:opacity-100 transition">
-                  <Download size={12} /> Tap to download
-                </div>
-              </a>
-            ))}
+            {qrs.map((q) => {
+              // On a computer the code is for scanning, not clicking — drop the link.
+              const Tile = onBigScreen ? "div" : "a";
+              const linkProps = onBigScreen ? {} : { href: q.href, target: "_blank", rel: "noreferrer noopener" };
+              return (
+                <Tile
+                  key={q.label}
+                  {...linkProps}
+                  className={cn(
+                    "group bg-white rounded-3xl p-5 text-center shadow-xl block",
+                    !onBigScreen && "hover-lift"
+                  )}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={q.src} alt={`${q.label} download QR`} className="w-full aspect-square object-contain rounded-xl" />
+                  <div className="mt-3 font-extrabold text-plum text-sm">{q.label}</div>
+                  <div className="text-[11px] text-muted mt-0.5">{q.hint}</div>
+                  <div
+                    className={cn(
+                      "mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-brand-600 transition",
+                      onBigScreen ? "opacity-100 text-muted" : "opacity-0 group-hover:opacity-100"
+                    )}
+                  >
+                    {onBigScreen ? <><ScanLine size={12} /> Scan with your phone</> : <><Download size={12} /> Tap to download</>}
+                  </div>
+                </Tile>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -626,6 +718,7 @@ function CtaBand() {
 /* ---------------- Footer ---------------- */
 function Footer() {
   const apk = useApk();
+  const isPhone = useIsPhone();
   return (
     <footer className="border-t border-black/5 bg-white">
       <div className="mx-auto max-w-6xl px-5 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -637,8 +730,14 @@ function Footer() {
         <div className="flex items-center gap-5 text-sm font-semibold text-plum-soft">
           <a href="#features" className="hover:text-brand-600 transition">Features</a>
           <a href="#faq" className="hover:text-brand-600 transition">FAQ</a>
-          <a href={apk.universal} target="_blank" rel="noreferrer noopener" className="hover:text-brand-600 transition">All devices</a>
-          <a href={apk.modern} target="_blank" rel="noreferrer noopener" className="hover:text-brand-600 transition">Latest devices</a>
+          {isPhone === false ? (
+            <a href="#scan" className="hover:text-brand-600 transition">Scan to install</a>
+          ) : (
+            <>
+              <a href={apk.universal} target="_blank" rel="noreferrer noopener" className="hover:text-brand-600 transition">All devices</a>
+              <a href={apk.modern} target="_blank" rel="noreferrer noopener" className="hover:text-brand-600 transition">Latest devices</a>
+            </>
+          )}
         </div>
       </div>
     </footer>
